@@ -292,7 +292,7 @@
 <div class="filter-bar" id="filterBar"></div>
 
 <div class="controls">
-  <button class="toggle-btn" id="modeBtn" onclick="toggleMode()">&#x270F;&#xFE0F; Mode: Flip</button>
+  <button class="toggle-btn on" id="modeBtn" onclick="toggleMode()">&#x270F;&#xFE0F; Mode: Type</button>
   <button class="toggle-btn" id="shuffleBtn" onclick="toggleShuffle()">&#x1F500; Shuffle: OFF</button>
   <button class="toggle-btn" id="dirBtn" onclick="toggleDirection()">&#x1F504; FI &rarr; EN</button>
 </div>
@@ -306,7 +306,7 @@
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
   </div>
 
-  <div class="card-scene" id="cardScene" onclick="flipCard()">
+  <div class="card-scene hidden" id="cardScene" onclick="flipCard()">
     <div class="card" id="card">
       <div class="card-face card-front">
         <div class="card-label" id="frontLabel">Finnish</div>
@@ -323,7 +323,7 @@
     </div>
   </div>
 
-  <div class="type-area" id="typeArea">
+  <div class="type-area active" id="typeArea">
     <div class="type-card">
       <div class="card-label" id="typeLabel">Finnish</div>
       <div class="card-word" id="typeWord"></div>
@@ -350,8 +350,8 @@
   </div>
 
   <div class="status-row">
-    <button class="status-btn btn-known" onclick="markKnown()">&#10003; Know it</button>
-    <button class="status-btn btn-again" onclick="markAgain()">&#x21BA; Study again</button>
+    <button class="status-btn btn-known" onclick="markKnown()">&#10003; Correct</button>
+    <button class="status-btn btn-again" onclick="markAgain()">&#x21BA; Wrong</button>
   </div>
 
   <div class="stats">
@@ -826,7 +826,7 @@ document.addEventListener("keydown", e => {
 });
 
 
-let typeMode = false;
+let typeMode = true;
 
 function toggleMode() {
   typeMode = !typeMode;
@@ -905,6 +905,13 @@ function checkAnswer() {
 
 buildFilterBar();
 buildDeck();
+// start in type mode
+document.getElementById('cardScene').classList.add('hidden');
+document.getElementById('typeArea').classList.add('active');
+document.getElementById('modeBtn').classList.add('on');
+document.querySelector('.btn-known').innerHTML = '&#10003; Correct';
+document.querySelector('.btn-again').innerHTML = '&#x21BA; Wrong';
+updateTypeCard();
 </script>
 </body>
 </html>
