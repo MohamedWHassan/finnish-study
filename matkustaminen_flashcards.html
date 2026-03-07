@@ -818,6 +818,11 @@ function restartAgain() {
 
 // Keyboard navigation
 document.addEventListener("keydown", e => {
+  const inInput = document.activeElement === document.getElementById('typeInput');
+  if (inInput) {
+    if (e.key === "Enter") { e.preventDefault(); checkAnswer(); }
+    return;
+  }
   if (e.key === "ArrowRight" || e.key === "l") nextCard();
   else if (e.key === "ArrowLeft" || e.key === "h") prevCard();
   else if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (typeMode) { checkAnswer(); } else { flipCard(); } }
