@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ihminen ja Terveys — Flashcards</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: 1.6em;
+    color: #34d399;
+    letter-spacing: 0.02em;
+  }
+  header p {
+    color: #94a3b8;
+    font-size: 0.9em;
+    margin-top: 4px;
+  }
+
+  /* Category filter */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+    max-width: 700px;
+  }
+  .filter-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: #34d399; color: #34d399; }
+  .filter-btn.active { background: #065f46; border-color: #10b981; color: #fff; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .toggle-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toggle-btn:hover { border-color: #34d399; color: #34d399; }
+  .toggle-btn.on { background: #064e3b; border-color: #10b981; color: #10b981; }
+
+  /* Progress */
+  .progress-wrap {
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 16px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82em;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 4px;
+    background: #1e293b;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  /* Card */
+  .card-scene {
+    width: 100%;
+    max-width: 480px;
+    height: 240px;
+    perspective: 1000px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    text-align: center;
+  }
+  .card-front {
+    background: linear-gradient(135deg, #1e3a2f, #1e293b);
+    border: 1px solid #2d5a3a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .card-back {
+    background: linear-gradient(135deg, #1a2e3a, #1e293b);
+    border: 1px solid #2d4a5a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: rotateY(180deg);
+  }
+
+  .card-label {
+    font-size: 0.72em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+  .card-front .card-label { color: #10b981; }
+  .card-back .card-label { color: #60a5fa; }
+
+  .card-word {
+    font-size: 2em;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1.2;
+  }
+  .card-sub {
+    font-size: 0.85em;
+    color: #64748b;
+    margin-top: 10px;
+    font-style: italic;
+  }
+  .card-category {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 0.7em;
+    color: #475569;
+    letter-spacing: 0.05em;
+  }
+  .card-hint {
+    position: absolute;
+    bottom: 14px;
+    font-size: 0.72em;
+    color: #334155;
+  }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .nav-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover:not(:disabled) { background: #1e3a2f; border-color: #10b981; color: #34d399; }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-count { font-size: 0.95em; color: #64748b; min-width: 80px; text-align: center; }
+
+  /* Status buttons */
+  .status-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .status-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-known {
+    background: #14532d;
+    color: #4ade80;
+    border: 1px solid #166534;
+  }
+  .btn-known:hover { background: #166534; }
+  .btn-again {
+    background: #450a0a;
+    color: #f87171;
+    border: 1px solid #7f1d1d;
+  }
+  .btn-again:hover { background: #7f1d1d; }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    gap: 24px;
+    font-size: 0.82em;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .stat { display: flex; align-items: center; gap: 5px; }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-known { background: #4ade80; }
+  .dot-again { background: #f87171; }
+  .dot-unseen { background: #334155; }
+
+  /* Completion screen */
+  .completion {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    max-width: 400px;
+  }
+  .completion.show { display: flex; }
+  .completion h2 { font-size: 1.8em; color: #34d399; }
+  .completion p { color: #94a3b8; }
+  .restart-btn {
+    background: #065f46;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .restart-btn:hover { background: #059669; }
+
+  .main-content { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  /* Type mode */
+  .card-scene.hidden { display: none; }
+  .type-area { display: none; width: 100%; max-width: 480px; margin-bottom: 24px; }
+  .type-area.active { display: block; }
+  .type-card {
+    background: linear-gradient(135deg, #1e3a2f, #1e293b);
+    border: 1px solid #2d5a3a;
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    margin-bottom: 16px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .type-input-row { display: flex; gap: 10px; }
+  .type-input {
+    flex: 1;
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 1em;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .type-input:focus { border-color: #10b981; }
+  .type-input.correct { border-color: #4ade80; background: #14532d22; }
+  .type-input.wrong   { border-color: #f87171; background: #450a0a22; }
+  .submit-btn {
+    background: #065f46;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .submit-btn:hover { background: #059669; }
+  .feedback-box {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-size: 0.9em;
+  }
+  .feedback-box.show { display: flex; }
+  .feedback-box.correct { background: #14532d44; border: 1px solid #4ade80; color: #4ade80; }
+  .feedback-box.wrong   { background: #450a0a44; border: 1px solid #f87171; color: #f87171; }
+  .feedback-icon { font-size: 1.3em; }
+  .feedback-answer { font-size: 0.88em; color: #94a3b8; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Finnish 2 — Flashcards</h1>
+  <p>Ihminen ja Terveys &mdash; Health &amp; Body Vocabulary</p>
+</header>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="controls">
+  <button class="toggle-btn" id="modeBtn" onclick="toggleMode()">&#x270F;&#xFE0F; Mode: Flip</button>
+  <button class="toggle-btn" id="shuffleBtn" onclick="toggleShuffle()">&#x1F500; Shuffle: OFF</button>
+  <button class="toggle-btn" id="dirBtn" onclick="toggleDirection()">&#x1F504; FI &rarr; EN</button>
+</div>
+
+<div class="main-content" id="mainContent">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="progressText">Card 1 of 0</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="card-scene" id="cardScene" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="card-face card-front">
+        <div class="card-label" id="frontLabel">Finnish</div>
+        <div class="card-word" id="frontWord"></div>
+        <div class="card-sub" id="frontSub"></div>
+        <div class="card-category" id="cardCategory"></div>
+        <div class="card-hint">Click to reveal</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label" id="backLabel">English</div>
+        <div class="card-word" id="backWord"></div>
+        <div class="card-sub" id="backSub"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="type-area" id="typeArea">
+    <div class="type-card">
+      <div class="card-label" id="typeLabel">Finnish</div>
+      <div class="card-word" id="typeWord"></div>
+      <div class="card-sub" id="typeSub"></div>
+      <div class="card-category" id="typeCategory"></div>
+    </div>
+    <div class="type-input-row">
+      <input class="type-input" id="typeInput" type="text" placeholder="Type your answer..." autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="submit-btn" id="submitBtn" onclick="checkAnswer()">Check</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <span class="feedback-icon" id="feedbackIcon"></span>
+      <div>
+        <div id="feedbackMsg"></div>
+        <div class="feedback-answer" id="feedbackAnswer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn" id="prevBtn" onclick="prevCard()">&#8592;</button>
+    <span class="nav-count" id="navCount">1 / 0</span>
+    <button class="nav-btn" id="nextBtn" onclick="nextCard()">&#8594;</button>
+  </div>
+
+  <div class="status-row">
+    <button class="status-btn btn-known" onclick="markKnown()">&#10003; Know it</button>
+    <button class="status-btn btn-again" onclick="markAgain()">&#x21BA; Study again</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-dot dot-known"></div><span id="statKnown">Known: 0</span></div>
+    <div class="stat"><div class="stat-dot dot-again"></div><span id="statAgain">Again: 0</span></div>
+    <div class="stat"><div class="stat-dot dot-unseen"></div><span id="statUnseen">Unseen: 0</span></div>
+  </div>
+</div>
+
+<div class="completion" id="completion">
+  <div style="font-size:3em">&#127881;</div>
+  <h2>Round complete!</h2>
+  <p id="completionText"></p>
+  <button class="restart-btn" onclick="restartAll()">Start over</button>
+  <button class="restart-btn" style="background:#7f1d1d" onclick="restartAgain()">Study marked cards</button>
+</div>
+
+<script>
+const ALL_CARDS = [
+  // Kehonosat — Body Parts
+  { fi: "pää", en: "head", cat: "Body" },
+  { fi: "kasvot", en: "face", cat: "Body" },
+  { fi: "hiukset", en: "hair", sub_fi: "hius = one strand", cat: "Body" },
+  { fi: "silmä / silmät", en: "eye / eyes", cat: "Body" },
+  { fi: "nenä", en: "nose", cat: "Body" },
+  { fi: "korva / korvat", en: "ear / ears", cat: "Body" },
+  { fi: "suu", en: "mouth", cat: "Body" },
+  { fi: "hammas / hampaat", en: "tooth / teeth", cat: "Body" },
+  { fi: "kaula", en: "throat / neck", cat: "Body" },
+  { fi: "niska", en: "back of the neck", cat: "Body" },
+  { fi: "hartia / hartiat", en: "shoulder / shoulders", cat: "Body" },
+  { fi: "rinta", en: "chest", cat: "Body" },
+  { fi: "käsivarsi / käsivarret", en: "arm / arms", cat: "Body" },
+  { fi: "kyynärpää", en: "elbow", cat: "Body" },
+  { fi: "käsi / kädet", en: "hand / hands", cat: "Body" },
+  { fi: "sormi / sormet", en: "finger / fingers", cat: "Body" },
+  { fi: "selkä", en: "back", cat: "Body" },
+  { fi: "vatsa", en: "belly / stomach", sub_fi: "colloquial: maha", cat: "Body" },
+  { fi: "lantio", en: "hips / pelvis", cat: "Body" },
+  { fi: "jalka / jalat", en: "leg / legs", cat: "Body" },
+  { fi: "reisi / reidet", en: "thigh / thighs", cat: "Body" },
+  { fi: "polvi / polvet", en: "knee / knees", cat: "Body" },
+  { fi: "sääri / sääret", en: "shin / shins", cat: "Body" },
+  { fi: "nilkka / nilkat", en: "ankle / ankles", cat: "Body" },
+  { fi: "varvas / varpaat", en: "toe / toes", cat: "Body" },
+
+  // Verbit — Health Verbs
+  { fi: "kokeilla", en: "to try / to test", cat: "Verbs" },
+  { fi: "hengittää", en: "to breathe", cat: "Verbs" },
+  { fi: "olla kunnossa", en: "to be fine / in good health", cat: "Verbs" },
+  { fi: "sattua", en: "to hurt / to ache", cat: "Verbs" },
+  { fi: "parantua", en: "to recover / to get better", cat: "Verbs" },
+  { fi: "alentaa kuumetta", en: "to lower a fever", cat: "Verbs" },
+  { fi: "jäädä sairauslomalle", en: "to go on sick leave", cat: "Verbs" },
+  { fi: "levätä", en: "to rest", cat: "Verbs" },
+  { fi: "varata aika", en: "to book an appointment", cat: "Verbs" },
+
+  // Hätä! — Emergency
+  { fi: "apua!", en: "help!", cat: "Emergency" },
+  { fi: "ensiapua", en: "first aid", cat: "Emergency" },
+  { fi: "hätänumero 112", en: "emergency number 112", cat: "Emergency" },
+  { fi: "ambulanssi", en: "ambulance", cat: "Emergency" },
+
+  // Hoitopaikat — Healthcare Places
+  { fi: "terveyskeskus", en: "health centre", cat: "Places" },
+  { fi: "terveysasema", en: "health station", cat: "Places" },
+  { fi: "sairaala", en: "hospital", cat: "Places" },
+  { fi: "neuvola", en: "maternity / child health clinic", cat: "Places" },
+  { fi: "päivystys", en: "emergency room / out-of-hours duty", cat: "Places" },
+  { fi: "apteekki", en: "pharmacy", cat: "Places" },
+
+  // Henkilöstö — Staff
+  { fi: "potilas", en: "patient", cat: "Staff" },
+  { fi: "lääkäri", en: "doctor", cat: "Staff" },
+  { fi: "hoitaja", en: "nurse / carer", cat: "Staff" },
+  { fi: "sairaanhoitaja", en: "registered nurse", cat: "Staff" },
+  { fi: "terveydenhoitaja", en: "public health nurse", cat: "Staff" },
+  { fi: "kätilö", en: "midwife", cat: "Staff" },
+  { fi: "psykologi", en: "psychologist", cat: "Staff" },
+
+  // Ajanvaraus — Appointments & Lab
+  { fi: "vastaanotto", en: "appointment / reception", cat: "Appt & Lab" },
+  { fi: "ajanvaraus", en: "appointment booking", cat: "Appt & Lab" },
+  { fi: "soittoaika", en: "call-back time slot", cat: "Appt & Lab" },
+  { fi: "laboratorio", en: "laboratory", sub_fi: "colloquial: labra", cat: "Appt & Lab" },
+  { fi: "verikoe", en: "blood test", cat: "Appt & Lab" },
+  { fi: "näyte", en: "sample / specimen", cat: "Appt & Lab" },
+  { fi: "rokotus", en: "vaccination", cat: "Appt & Lab" },
+  { fi: "bakteeri", en: "bacterium / bacteria", cat: "Appt & Lab" },
+  { fi: "virus", en: "virus", cat: "Appt & Lab" },
+
+  // Sairaudet ja Oireet — Illnesses & Symptoms
+  { fi: "oire", en: "symptom", cat: "Illness" },
+  { fi: "flunssa", en: "flu / influenza", cat: "Illness" },
+  { fi: "nuha", en: "runny nose / cold", cat: "Illness" },
+  { fi: "yskä", en: "cough", cat: "Illness" },
+  { fi: "kuume", en: "fever", cat: "Illness" },
+  { fi: "päänsärky", en: "headache", cat: "Illness" },
+  { fi: "tulehdus", en: "inflammation / infection", cat: "Illness" },
+  { fi: "korvatulehdus", en: "ear infection", cat: "Illness" },
+  { fi: "silmätulehdus", en: "eye infection", cat: "Illness" },
+  { fi: "vatsatauti", en: "stomach bug / gastroenteritis", cat: "Illness" },
+  { fi: "oksennus", en: "vomiting", cat: "Illness" },
+  { fi: "ripuli", en: "diarrhea", cat: "Illness" },
+  { fi: "allergia", en: "allergy", cat: "Illness" },
+  { fi: "ihottuma", en: "rash / skin rash", cat: "Illness" },
+  { fi: "verenpaine", en: "blood pressure", cat: "Illness" },
+  { fi: "sydäninfarkti", en: "heart attack", cat: "Illness" },
+  { fi: "syöpä", en: "cancer", cat: "Illness" },
+  { fi: "siitepöly", en: "pollen", cat: "Illness" },
+
+  // Mielenterveys — Mental Health
+  { fi: "mielenterveys", en: "mental health", cat: "Mental" },
+  { fi: "masennus", en: "depression", cat: "Mental" },
+  { fi: "ahdistus", en: "anxiety", cat: "Mental" },
+  { fi: "uupumus", en: "exhaustion / burnout", cat: "Mental" },
+  { fi: "stressi", en: "stress", cat: "Mental" },
+
+  // Hoito — Treatment
+  { fi: "hoito", en: "treatment / care", cat: "Treatment" },
+  { fi: "resepti", en: "prescription", cat: "Treatment" },
+  { fi: "lääke", en: "medicine / medication", cat: "Treatment" },
+  { fi: "lääkekuuri", en: "course of medication", cat: "Treatment" },
+  { fi: "allergialääke", en: "allergy medicine / antihistamine", cat: "Treatment" },
+  { fi: "särkylääke", en: "painkiller", cat: "Treatment" },
+  { fi: "sairausloma", en: "sick leave", cat: "Treatment" },
+  { fi: "lepo", en: "rest", cat: "Treatment" },
+
+  // Toipumistoivotukset — Get Well
+  { fi: "Parane pian!", en: "Get well soon!", cat: "Get Well" },
+  { fi: "Paranemisia!", en: "Wishing you a recovery!", cat: "Get Well" },
+  { fi: "Toivottavasti paranet nopeasti!", en: "I hope you recover quickly!", cat: "Get Well" },
+  { fi: "Pidä huolta itsestäsi!", en: "Take care of yourself!", cat: "Get Well" },
+];
+
+const CATEGORIES = ["All", ...new Set(ALL_CARDS.map(c => c.cat))];
+
+let deck = [...ALL_CARDS];
+let index = 0;
+let flipped = false;
+let shuffle = false;
+let direction = "fi-en";
+let activeCategory = "All";
+let status = {};
+
+function buildFilterBar() {
+  const bar = document.getElementById("filterBar");
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (cat === "All" ? " active" : "");
+    btn.textContent = cat;
+    btn.onclick = () => setCategory(cat);
+    btn.dataset.cat = cat;
+    bar.appendChild(btn);
+  });
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll(".filter-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.cat === cat);
+  });
+  buildDeck();
+}
+
+function buildDeck() {
+  deck = activeCategory === "All"
+    ? [...ALL_CARDS]
+    : ALL_CARDS.filter(c => c.cat === activeCategory);
+  if (shuffle) shuffleDeck();
+  status = {};
+  index = 0;
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+  document.getElementById("completion").classList.remove("show");
+  document.getElementById("mainContent").style.display = "flex";
+  updateCard();
+  updateStats();
+}
+
+function shuffleDeck() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+function toggleShuffle() {
+  shuffle = !shuffle;
+  const btn = document.getElementById("shuffleBtn");
+  btn.textContent = shuffle ? "🔀 Shuffle: ON" : "🔀 Shuffle: OFF";
+  btn.classList.toggle("on", shuffle);
+  buildDeck();
+}
+
+function toggleDirection() {
+  direction = direction === "fi-en" ? "en-fi" : "fi-en";
+  const btn = document.getElementById("dirBtn");
+  btn.innerHTML = direction === "fi-en" ? "&#x1F504; FI &rarr; EN" : "&#x1F504; EN &rarr; FI";
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+  updateCard();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById("card").classList.toggle("flipped", flipped);
+}
+
+function updateCard() {
+  if (deck.length === 0) return;
+  if (typeMode) { updateTypeCard(); return; }
+  const c = deck[index];
+
+  const isFI = direction === "fi-en";
+  const frontWord = isFI ? c.fi : c.en;
+  const backWord  = isFI ? c.en : c.fi;
+  const frontSub  = isFI ? (c.sub_fi || "") : (c.sub_en || "");
+  const backSub   = isFI ? (c.sub_en || "") : (c.sub_fi || "");
+
+  document.getElementById("frontLabel").textContent = isFI ? "Finnish" : "English";
+  document.getElementById("backLabel").textContent  = isFI ? "English" : "Finnish";
+  document.getElementById("frontWord").textContent  = frontWord;
+  document.getElementById("backWord").textContent   = backWord;
+  document.getElementById("frontSub").textContent   = frontSub;
+  document.getElementById("backSub").textContent    = backSub;
+  document.getElementById("cardCategory").textContent = c.cat;
+
+  const total = deck.length;
+  const pct = Math.round((index / total) * 100);
+  document.getElementById("progressText").textContent = `Card ${index + 1} of ${total}`;
+  document.getElementById("progressPct").textContent  = pct + "%";
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("navCount").textContent     = `${index + 1} / ${total}`;
+  document.getElementById("prevBtn").disabled = index === 0;
+  document.getElementById("nextBtn").disabled = index === deck.length - 1;
+}
+
+function nextCard() {
+  if (index < deck.length - 1) {
+    index++;
+    flipped = false;
+    document.getElementById("card").classList.remove("flipped");
+    updateCard();
+  } else {
+    showCompletion();
+  }
+}
+
+function prevCard() {
+  if (index > 0) {
+    index--;
+    flipped = false;
+    document.getElementById("card").classList.remove("flipped");
+    updateCard();
+  }
+}
+
+function markKnown() {
+  status[index] = "known";
+  updateStats();
+  nextCard();
+}
+
+function markAgain() {
+  status[index] = "again";
+  updateStats();
+  nextCard();
+}
+
+function updateStats() {
+  const known  = Object.values(status).filter(s => s === "known").length;
+  const again  = Object.values(status).filter(s => s === "again").length;
+  const unseen = deck.length - Object.keys(status).length;
+  document.getElementById("statKnown").textContent  = `Known: ${known}`;
+  document.getElementById("statAgain").textContent  = `Again: ${again}`;
+  document.getElementById("statUnseen").textContent = `Unseen: ${unseen}`;
+}
+
+function showCompletion() {
+  const known = Object.values(status).filter(s => s === "known").length;
+  const again = Object.values(status).filter(s => s === "again").length;
+  document.getElementById("completionText").textContent =
+    `You knew ${known} of ${deck.length} cards. ${again} marked for review.`;
+  document.getElementById("mainContent").style.display = "none";
+  document.getElementById("completion").classList.add("show");
+}
+
+function restartAll() {
+  buildDeck();
+}
+
+function restartAgain() {
+  const againIndices = Object.entries(status)
+    .filter(([, v]) => v === "again")
+    .map(([k]) => parseInt(k));
+  if (againIndices.length === 0) { restartAll(); return; }
+  deck = againIndices.map(i => deck[i]);
+  status = {};
+  index = 0;
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+  document.getElementById("completion").classList.remove("show");
+  document.getElementById("mainContent").style.display = "flex";
+  updateCard();
+  updateStats();
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "l") nextCard();
+  else if (e.key === "ArrowLeft" || e.key === "h") prevCard();
+  else if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (typeMode) { checkAnswer(); } else { flipCard(); } }
+  else if (e.key === "k") markKnown();
+  else if (e.key === "r") markAgain();
+});
+
+let typeMode = false;
+
+function toggleMode() {
+  typeMode = !typeMode;
+  const btn = document.getElementById('modeBtn');
+  btn.textContent = typeMode ? '✏️ Mode: Type' : '✏️ Mode: Flip';
+  btn.classList.toggle('on', typeMode);
+  document.getElementById('cardScene').classList.toggle('hidden', typeMode);
+  document.getElementById('typeArea').classList.toggle('active', typeMode);
+  document.querySelector('.btn-known').innerHTML = typeMode ? '&#10003; Correct' : '&#10003; Know it';
+  document.querySelector('.btn-again').innerHTML = typeMode ? '&#x21BA; Wrong' : '&#x21BA; Study again';
+  resetTypeInput();
+  if (typeMode) updateTypeCard();
+}
+
+function resetTypeInput() {
+  const inp = document.getElementById('typeInput');
+  if (inp) { inp.value = ''; inp.className = 'type-input'; inp.disabled = false; }
+  const fb = document.getElementById('feedbackBox');
+  if (fb) { fb.className = 'feedback-box'; }
+  document.getElementById('submitBtn').textContent = 'Check';
+  document.getElementById('submitBtn').onclick = checkAnswer;
+}
+
+function updateTypeCard() {
+  if (deck.length === 0) return;
+  const c = deck[index];
+  const isFI = direction === 'fi-en';
+  document.getElementById('typeLabel').textContent = isFI ? 'Finnish' : 'English';
+  document.getElementById('typeWord').textContent  = isFI ? c.fi : c.en;
+  document.getElementById('typeSub').textContent   = isFI ? (c.sub_fi || '') : (c.sub_en || '');
+  document.getElementById('typeCategory').textContent = c.cat;
+  resetTypeInput();
+  setTimeout(() => { const inp = document.getElementById('typeInput'); if(inp) inp.focus(); }, 50);
+}
+
+function normalise(s) {
+  return s.trim().toLowerCase()
+    .replace(/[/\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[()]/g, '')
+    .trim();
+}
+
+function checkAnswer() {
+  if (deck.length === 0) return;
+  const c = deck[index];
+  const isFI = direction === 'fi-en';
+  const correct = isFI ? c.en : c.fi;
+  const userRaw = document.getElementById('typeInput').value;
+  const user = normalise(userRaw);
+  if (!user) return;
+
+  const variants = correct.split(/[/,]/).map(v => normalise(v));
+  const isCorrect = variants.some(v => user === v || v.startsWith(user) && v.length - user.length <= 3 || user.startsWith(v) && user.length - v.length <= 3);
+
+  const inp = document.getElementById('typeInput');
+  const fb  = document.getElementById('feedbackBox');
+  inp.disabled = true;
+  inp.className = 'type-input ' + (isCorrect ? 'correct' : 'wrong');
+  fb.className  = 'feedback-box show ' + (isCorrect ? 'correct' : 'wrong');
+  document.getElementById('feedbackIcon').textContent = isCorrect ? '✓' : '✗';
+  document.getElementById('feedbackMsg').textContent  = isCorrect ? 'Correct!' : 'Not quite.';
+  document.getElementById('feedbackAnswer').textContent = isCorrect ? '' : 'Answer: ' + correct;
+
+  status[index] = isCorrect ? 'known' : 'again';
+  updateStats();
+
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Next →';
+  btn.onclick = () => { isCorrect ? markKnown() : markAgain(); };
+}
+
+buildFilterBar();
+buildDeck();
+</script>
+</body>
+</html>

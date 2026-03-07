@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matkustaminen — Flashcards</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: 1.6em;
+    color: #60a5fa;
+    letter-spacing: 0.02em;
+  }
+  header p {
+    color: #94a3b8;
+    font-size: 0.9em;
+    margin-top: 4px;
+  }
+
+  /* Category filter */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+    max-width: 700px;
+  }
+  .filter-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+  .filter-btn.active { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .toggle-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toggle-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+  .toggle-btn.on { background: #164e63; border-color: #22d3ee; color: #22d3ee; }
+
+  /* Progress */
+  .progress-wrap {
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 16px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82em;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 4px;
+    background: #1e293b;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  /* Card */
+  .card-scene {
+    width: 100%;
+    max-width: 480px;
+    height: 240px;
+    perspective: 1000px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    text-align: center;
+  }
+  .card-front {
+    background: linear-gradient(135deg, #1e3a5f, #1e293b);
+    border: 1px solid #2d4a7a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .card-back {
+    background: linear-gradient(135deg, #1a3a2a, #1e293b);
+    border: 1px solid #2d5a3a;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: rotateY(180deg);
+  }
+
+  .card-label {
+    font-size: 0.72em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+  .card-front .card-label { color: #3b82f6; }
+  .card-back .card-label { color: #34d399; }
+
+  .card-word {
+    font-size: 2em;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1.2;
+  }
+  .card-sub {
+    font-size: 0.85em;
+    color: #64748b;
+    margin-top: 10px;
+    font-style: italic;
+  }
+  .card-category {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 0.7em;
+    color: #475569;
+    letter-spacing: 0.05em;
+  }
+  .card-hint {
+    position: absolute;
+    bottom: 14px;
+    font-size: 0.72em;
+    color: #334155;
+  }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .nav-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover:not(:disabled) { background: #2d4a7a; border-color: #3b82f6; color: #60a5fa; }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .nav-count { font-size: 0.95em; color: #64748b; min-width: 80px; text-align: center; }
+
+  /* Status buttons */
+  .status-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .status-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-known {
+    background: #14532d;
+    color: #4ade80;
+    border: 1px solid #166534;
+  }
+  .btn-known:hover { background: #166534; }
+  .btn-again {
+    background: #450a0a;
+    color: #f87171;
+    border: 1px solid #7f1d1d;
+  }
+  .btn-again:hover { background: #7f1d1d; }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    gap: 24px;
+    font-size: 0.82em;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+  .stat { display: flex; align-items: center; gap: 5px; }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-known { background: #4ade80; }
+  .dot-again { background: #f87171; }
+  .dot-unseen { background: #334155; }
+
+  /* Completion screen */
+  .completion {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    max-width: 400px;
+  }
+  .completion.show { display: flex; }
+  .completion h2 { font-size: 1.8em; color: #60a5fa; }
+  .completion p { color: #94a3b8; }
+  .restart-btn {
+    background: #1d4ed8;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .restart-btn:hover { background: #2563eb; }
+
+  .main-content { width: 100%; display: flex; flex-direction: column; align-items: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Finnish 2 — Flashcards</h1>
+  <p>Matkustaminen &amp; Vaatteet Vocabulary</p>
+</header>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<div class="controls">
+  <button class="toggle-btn" id="modeBtn" onclick="toggleMode()">&#x270F;&#xFE0F; Mode: Flip</button>
+  <button class="toggle-btn" id="shuffleBtn" onclick="toggleShuffle()">&#x1F500; Shuffle: OFF</button>
+  <button class="toggle-btn" id="dirBtn" onclick="toggleDirection()">&#x1F504; FI &rarr; EN</button>
+</div>
+
+<div class="main-content" id="mainContent">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="progressText">Card 1 of 0</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="card-scene" id="cardScene" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="card-face card-front">
+        <div class="card-label" id="frontLabel">Finnish</div>
+        <div class="card-word" id="frontWord"></div>
+        <div class="card-sub" id="frontSub"></div>
+        <div class="card-category" id="cardCategory"></div>
+        <div class="card-hint">Click to reveal</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label" id="backLabel">English</div>
+        <div class="card-word" id="backWord"></div>
+        <div class="card-sub" id="backSub"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="type-area" id="typeArea">
+    <div class="type-card">
+      <div class="card-label" id="typeLabel">Finnish</div>
+      <div class="card-word" id="typeWord"></div>
+      <div class="card-sub" id="typeSub"></div>
+      <div class="card-category" id="typeCategory"></div>
+    </div>
+    <div class="type-input-row">
+      <input class="type-input" id="typeInput" type="text" placeholder="Type your answer..." autocomplete="off" autocorrect="off" spellcheck="false" />
+      <button class="submit-btn" id="submitBtn" onclick="checkAnswer()">Check</button>
+    </div>
+    <div class="feedback-box" id="feedbackBox">
+      <span class="feedback-icon" id="feedbackIcon"></span>
+      <div>
+        <div id="feedbackMsg"></div>
+        <div class="feedback-answer" id="feedbackAnswer"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn" id="prevBtn" onclick="prevCard()">&#8592;</button>
+    <span class="nav-count" id="navCount">1 / 0</span>
+    <button class="nav-btn" id="nextBtn" onclick="nextCard()">&#8594;</button>
+  </div>
+
+  <div class="status-row">
+    <button class="status-btn btn-known" onclick="markKnown()">&#10003; Know it</button>
+    <button class="status-btn btn-again" onclick="markAgain()">&#x21BA; Study again</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-dot dot-known"></div><span id="statKnown">Known: 0</span></div>
+    <div class="stat"><div class="stat-dot dot-again"></div><span id="statAgain">Again: 0</span></div>
+    <div class="stat"><div class="stat-dot dot-unseen"></div><span id="statUnseen">Unseen: 0</span></div>
+  </div>
+</div>
+
+<div class="completion" id="completion">
+  <div style="font-size:3em">&#127881;</div>
+  <h2>Round complete!</h2>
+  <p id="completionText"></p>
+  <button class="restart-btn" onclick="restartAll()">Start over</button>
+  <button class="restart-btn" style="background:#7f1d1d" onclick="restartAgain()">Study marked cards</button>
+</div>
+
+<script>
+const ALL_CARDS = [
+  // Matkalla — On a Trip
+  { fi: "lähteä matkalle", en: "to go on a trip", cat: "Matkalla" },
+  { fi: "lähteä reissuun", en: "to go on a trip", sub_en: "informal", cat: "Matkalla" },
+  { fi: "olla matkalla", en: "to be traveling", cat: "Matkalla" },
+  { fi: "olla reissussa", en: "to be on a trip", sub_en: "informal", cat: "Matkalla" },
+  { fi: "saapua", en: "to arrive", cat: "Matkalla" },
+  { fi: "olla perillä", en: "to be at the destination", cat: "Matkalla" },
+  { fi: "päästä", en: "to get / arrive (somewhere)", cat: "Matkalla" },
+
+  // Travel & Booking
+  { fi: "matkalippu", en: "travel ticket", cat: "Booking" },
+  { fi: "meno", en: "one-way (going)", cat: "Booking" },
+  { fi: "paluu", en: "return", cat: "Booking" },
+  { fi: "meno-paluu", en: "return ticket", cat: "Booking" },
+  { fi: "vaihto", en: "transfer / connection", cat: "Booking" },
+  { fi: "paikkavaraus", en: "seat reservation", cat: "Booking" },
+  { fi: "tehdä varaus / varata", en: "to make a reservation", cat: "Booking" },
+  { fi: "perua varaus", en: "to cancel a reservation", cat: "Booking" },
+  { fi: "peruttu", en: "cancelled", cat: "Booking" },
+
+  // Travel Documents
+  { fi: "passi", en: "passport", cat: "Documents" },
+  { fi: "viisumi", en: "visa", cat: "Documents" },
+  { fi: "matkavakuutus", en: "travel insurance", cat: "Documents" },
+  { fi: "tulli", en: "customs", cat: "Documents" },
+
+  // Tourism
+  { fi: "matkailu", en: "tourism", cat: "Tourism" },
+  { fi: "turisti", en: "tourist", cat: "Tourism" },
+  { fi: "opas", en: "guide", cat: "Tourism" },
+  { fi: "nähtävyys", en: "attraction / sight", cat: "Tourism" },
+  { fi: "kiertoajelu", en: "sightseeing tour", cat: "Tourism" },
+  { fi: "retki", en: "excursion / day trip", cat: "Tourism" },
+
+  // Train Station
+  { fi: "juna", en: "train", cat: "Train" },
+  { fi: "raide", en: "track / rail", cat: "Train" },
+  { fi: "laituri", en: "platform", cat: "Train" },
+  { fi: "vaunu", en: "carriage / wagon", cat: "Train" },
+  { fi: "hytti", en: "compartment / cabin", cat: "Train" },
+  { fi: "makuuhytti", en: "sleeping cabin", cat: "Train" },
+  { fi: "pääteasema", en: "end station / terminal", cat: "Train" },
+
+  // Airport
+  { fi: "lento", en: "flight", cat: "Airport" },
+  { fi: "lentolippu", en: "flight ticket", cat: "Airport" },
+  { fi: "käsimatkatavara", en: "hand luggage / carry-on", cat: "Airport" },
+  { fi: "turvatarkastus", en: "security check", cat: "Airport" },
+  { fi: "lähtöportti", en: "departure gate", cat: "Airport" },
+  { fi: "lähtevät", en: "departures", cat: "Airport" },
+  { fi: "saapuvat", en: "arrivals", cat: "Airport" },
+  { fi: "laskeutua", en: "to land", cat: "Airport" },
+
+  // Harbour
+  { fi: "terminaali", en: "terminal", cat: "Harbour" },
+  { fi: "kansi", en: "deck", cat: "Harbour" },
+  { fi: "laiva", en: "ship", cat: "Harbour" },
+  { fi: "autolautta", en: "car ferry", cat: "Harbour" },
+
+  // Public Transport Tickets
+  { fi: "kertalippu", en: "single ticket", cat: "Tickets" },
+  { fi: "vuorokausilippu", en: "24-hour / day ticket", cat: "Tickets" },
+  { fi: "kausilippu", en: "season ticket", cat: "Tickets" },
+  { fi: "kausikortti", en: "season pass / card", cat: "Tickets" },
+  { fi: "matkakortti", en: "travel card", cat: "Tickets" },
+  { fi: "matkustusalue", en: "travel area", cat: "Tickets" },
+  { fi: "vyöhyke", en: "zone", cat: "Tickets" },
+  { fi: "tarkastusmaksu", en: "penalty fare / inspection fee", cat: "Tickets" },
+  { fi: "lastenvaunut ja -rattaat", en: "prams and pushchairs", cat: "Tickets" },
+  { fi: "invapaikka", en: "disabled space / priority place", cat: "Tickets" },
+
+  // Distance & Direction
+  { fi: "kauas", en: "far away", sub_en: "towards/to", cat: "Direction" },
+  { fi: "kaukana", en: "far away", sub_en: "location", cat: "Direction" },
+  { fi: "lähelle", en: "nearby", sub_en: "towards/to", cat: "Direction" },
+  { fi: "lähellä", en: "nearby", sub_en: "location", cat: "Direction" },
+  { fi: "läheltä", en: "from nearby", cat: "Direction" },
+
+  // Reading — Verbs
+  { fi: "matkustaa", en: "to travel", cat: "R: Verbs" },
+  { fi: "mennä", en: "to go", cat: "R: Verbs" },
+  { fi: "varata", en: "to book / reserve", cat: "R: Verbs" },
+  { fi: "palata", en: "to return / come back", cat: "R: Verbs" },
+  { fi: "kuunnella", en: "to listen", cat: "R: Verbs" },
+  { fi: "katsoa", en: "to watch", cat: "R: Verbs" },
+  { fi: "syödä", en: "to eat", cat: "R: Verbs" },
+  { fi: "juoda", en: "to drink", cat: "R: Verbs" },
+  { fi: "käydä syömässä", en: "to go eat / to go out to eat", cat: "R: Verbs" },
+  { fi: "käydä ostoksilla", en: "to go shopping", cat: "R: Verbs" },
+  { fi: "herätä", en: "to wake up", cat: "R: Verbs" },
+  { fi: "tarvita", en: "to need", cat: "R: Verbs" },
+  { fi: "istua", en: "to sit", cat: "R: Verbs" },
+  { fi: "kävellä", en: "to walk", cat: "R: Verbs" },
+  { fi: "käydä", en: "to visit / to go briefly", cat: "R: Verbs" },
+
+  // Reading — Places
+  { fi: "hotelli", en: "hotel", cat: "R: Places" },
+  { fi: "hotellihuone", en: "hotel room", cat: "R: Places" },
+  { fi: "keskusta", en: "city centre / downtown", cat: "R: Places" },
+  { fi: "kauppatori", en: "market square", cat: "R: Places" },
+  { fi: "teatteri", en: "theatre", cat: "R: Places" },
+  { fi: "museo", en: "museum", cat: "R: Places" },
+  { fi: "kahvila", en: "café", cat: "R: Places" },
+  { fi: "ravintolavaunu", en: "dining car", cat: "R: Places" },
+  { fi: "meri", en: "sea", cat: "R: Places" },
+  { fi: "ranta", en: "beach / shore", cat: "R: Places" },
+  { fi: "meren ranta", en: "seaside / seashore", cat: "R: Places" },
+  { fi: "kaupunki", en: "city / town", cat: "R: Places" },
+
+  // Reading — Food & Drink
+  { fi: "aamiainen", en: "breakfast", cat: "R: Food" },
+  { fi: "kanasalaatti", en: "chicken salad", cat: "R: Food" },
+  { fi: "olut", en: "beer", cat: "R: Food" },
+  { fi: "kahvi", en: "coffee", cat: "R: Food" },
+  { fi: "munkki", en: "doughnut", cat: "R: Food" },
+  { fi: "ruoka", en: "food", cat: "R: Food" },
+
+  // Reading — Time
+  { fi: "viikonloppu", en: "weekend", cat: "R: Time" },
+  { fi: "pitkä viikonloppu", en: "long weekend", cat: "R: Time" },
+  { fi: "torstai", en: "Thursday", cat: "R: Time" },
+  { fi: "sunnuntai", en: "Sunday", cat: "R: Time" },
+  { fi: "illalla", en: "in the evening", cat: "R: Time" },
+  { fi: "aamulla", en: "in the morning", cat: "R: Time" },
+  { fi: "joka päivä", en: "every day", cat: "R: Time" },
+  { fi: "aikaisin", en: "early", cat: "R: Time" },
+  { fi: "myöhään", en: "late", cat: "R: Time" },
+  { fi: "ennen", en: "before", cat: "R: Time" },
+  { fi: "jälkeen", en: "after", cat: "R: Time" },
+  { fi: "keväällä", en: "in spring", cat: "R: Time" },
+  { fi: "ensimmäistä kertaa", en: "for the first time", cat: "R: Time" },
+
+  // Reading — Adjectives & Adverbs
+  { fi: "nopea", en: "fast / quick", cat: "R: Adjectives" },
+  { fi: "pieni", en: "small", cat: "R: Adjectives" },
+  { fi: "viihtyisä", en: "cozy / comfortable", cat: "R: Adjectives" },
+  { fi: "runsas", en: "plentiful / generous", cat: "R: Adjectives" },
+  { fi: "herkullinen", en: "delicious", cat: "R: Adjectives" },
+  { fi: "väsynyt", en: "tired", cat: "R: Adjectives" },
+  { fi: "aurinkoinen", en: "sunny", cat: "R: Adjectives" },
+  { fi: "kylmä", en: "cold", cat: "R: Adjectives" },
+  { fi: "kiva", en: "nice / fun", cat: "R: Adjectives" },
+  { fi: "ihan", en: "quite / really / just", cat: "R: Adjectives" },
+  { fi: "paljon", en: "a lot / much / many", cat: "R: Adjectives" },
+
+  // Reading — Other words
+  { fi: "junamatka", en: "train journey / train trip", cat: "R: Other" },
+  { fi: "äänikirja", en: "audiobook", cat: "R: Other" },
+  { fi: "jalkapallo", en: "football / soccer", cat: "R: Other" },
+  { fi: "tabletti", en: "tablet (device)", cat: "R: Other" },
+  { fi: "ohjelma", en: "programme / schedule", cat: "R: Other" },
+  { fi: "ystävä", en: "friend", cat: "R: Other" },
+  { fi: "väsynyt olo", en: "tired feeling / to feel tired", cat: "R: Other" },
+  { fi: "merituuli", en: "sea breeze / sea wind", cat: "R: Other" },
+  { fi: "sinne", en: "there (to that place)", cat: "R: Other" },
+  { fi: "myös", en: "also / too", cat: "R: Other" },
+  { fi: "koska", en: "because", cat: "R: Other" },
+  { fi: "mutta", en: "but", cat: "R: Other" },
+  { fi: "jo", en: "already", cat: "R: Other" },
+
+  // Transport
+  { fi: "raitiovaunu", en: "tram", sub_fi: "spoken: raitikka", cat: "Transport" },
+  { fi: "polkupyörä", en: "bicycle / bike", sub_fi: "spoken: pyörä", cat: "Transport" },
+  { fi: "lentokone", en: "airplane", cat: "Transport" },
+  { fi: "taksi", en: "taxi", cat: "Transport" },
+  { fi: "bussi / linja-auto", en: "bus / coach", cat: "Transport" },
+  { fi: "metro", en: "metro / subway", cat: "Transport" },
+  { fi: "moottoripyörä", en: "motorcycle", cat: "Transport" },
+  { fi: "juna", en: "train", cat: "Transport" },
+  { fi: "laiva", en: "ship / ferry", cat: "Transport" },
+  { fi: "auto", en: "car", cat: "Transport" },
+  { fi: "kävellä", en: "to walk / on foot", sub_fi: "millä: kävellen", cat: "Transport" },
+  { fi: "raitiovaunulla", en: "by tram", sub_en: "millä?", cat: "Transport" },
+  { fi: "polkupyörällä", en: "by bike", sub_en: "millä?", cat: "Transport" },
+  { fi: "lentokoneella", en: "by plane", sub_en: "millä?", cat: "Transport" },
+  { fi: "taksilla", en: "by taxi", sub_en: "millä?", cat: "Transport" },
+  { fi: "bussilla / linja-autolla", en: "by bus", sub_en: "millä?", cat: "Transport" },
+  { fi: "metrolla", en: "by metro", sub_en: "millä?", cat: "Transport" },
+  { fi: "moottoripyörällä", en: "by motorcycle", sub_en: "millä?", cat: "Transport" },
+  { fi: "junalla", en: "by train", sub_en: "millä?", cat: "Transport" },
+  { fi: "laivalla", en: "by ship / ferry", sub_en: "millä?", cat: "Transport" },
+  { fi: "autolla", en: "by car", sub_en: "millä?", cat: "Transport" },
+
+  // Places
+  { fi: "koti", en: "home", cat: "Places" },
+  { fi: "kurssi", en: "course / class", cat: "Places" },
+  { fi: "kirjasto", en: "library", cat: "Places" },
+  { fi: "kauppa", en: "shop / store", cat: "Places" },
+  { fi: "lentoasema", en: "airport", cat: "Places" },
+  { fi: "kylpylä", en: "spa", cat: "Places" },
+  { fi: "yliopisto", en: "university", cat: "Places" },
+  { fi: "kauppatori", en: "market square", cat: "Places" },
+  { fi: "rautatieasema", en: "train station", cat: "Places" },
+  { fi: "linja-autoasema", en: "bus station", cat: "Places" },
+  { fi: "satama", en: "harbour / port", cat: "Places" },
+  { fi: "kesämökki", en: "summer cottage", cat: "Places" },
+  { fi: "ravintola", en: "restaurant", cat: "Places" },
+
+  // Local Cases
+  { fi: "Mistä?", en: "From where? (elative)", sub_fi: "suffix: -sta/-stä, -lta/-ltä", cat: "Cases" },
+  { fi: "Millä?", en: "By what means? (adessive)", sub_fi: "suffix: -lla/-llä", cat: "Cases" },
+  { fi: "Mihin?", en: "To where? (illative)", sub_fi: "suffix: -lle, -Vn, -hVn, -seen", cat: "Cases" },
+  { fi: "kotoa", en: "from home", sub_en: "mistä?", cat: "Cases" },
+  { fi: "Helsingistä", en: "from Helsinki", sub_en: "mistä?", cat: "Cases" },
+  { fi: "kurssilta", en: "from the course", sub_en: "mistä?", cat: "Cases" },
+  { fi: "kotiin", en: "to home", sub_en: "mihin?", cat: "Cases" },
+  { fi: "kauppaan", en: "to the shop", sub_en: "mihin?", cat: "Cases" },
+  { fi: "Turkuun", en: "to Turku", sub_en: "mihin?", cat: "Cases" },
+  { fi: "lentoasemalle", en: "to the airport", sub_en: "mihin?", cat: "Cases" },
+  { fi: "satamaan", en: "to the harbour", sub_en: "mihin?", cat: "Cases" },
+
+  // Colours
+  { fi: "punainen", en: "red", cat: "Colours" },
+  { fi: "sininen", en: "blue", cat: "Colours" },
+  { fi: "keltainen", en: "yellow", cat: "Colours" },
+  { fi: "vihreä", en: "green", cat: "Colours" },
+  { fi: "oranssi", en: "orange", cat: "Colours" },
+  { fi: "musta", en: "black", cat: "Colours" },
+  { fi: "valkoinen", en: "white", cat: "Colours" },
+  { fi: "ruskea", en: "brown", cat: "Colours" },
+  { fi: "harmaa", en: "gray", cat: "Colours" },
+
+  // Tops
+  { fi: "t-paita", en: "t-shirt", cat: "Tops" },
+  { fi: "toppi", en: "tank top / top", cat: "Tops" },
+  { fi: "kauluspaita", en: "collared shirt / button-up shirt", cat: "Tops" },
+  { fi: "villapaita", en: "sweater / jumper", cat: "Tops" },
+  { fi: "huppari", en: "hoodie", sub_en: "colloquial", cat: "Tops" },
+  { fi: "yöpaita", en: "nightgown / nightshirt", cat: "Tops" },
+
+  // Jackets & Outerwear
+  { fi: "takki", en: "jacket / coat", cat: "Jackets" },
+  { fi: "farkkutakki", en: "denim jacket", cat: "Jackets" },
+  { fi: "liivi", en: "vest / waistcoat", cat: "Jackets" },
+
+  // Underwear
+  { fi: "rintaliivit / liivit", en: "bra", sub_fi: "spoken: rintsikat", cat: "Underwear" },
+  { fi: "rintsikat", en: "bra", sub_en: "colloquial", cat: "Underwear" },
+  { fi: "alushousut", en: "underwear / underpants", sub_fi: "spoken: alkkarit, pikkarit", cat: "Underwear" },
+  { fi: "alkkarit / pikkarit", en: "underwear", sub_en: "colloquial", cat: "Underwear" },
+
+  // Bottoms
+  { fi: "mekko", en: "dress", cat: "Bottoms" },
+  { fi: "hame", en: "skirt", cat: "Bottoms" },
+  { fi: "housut", en: "trousers / pants", cat: "Bottoms" },
+  { fi: "farkut", en: "jeans", cat: "Bottoms" },
+  { fi: "shortsit", en: "shorts", sub_fi: "also: sortsit", cat: "Bottoms" },
+  { fi: "verkkarit", en: "tracksuit bottoms / sweatpants", sub_en: "colloquial", cat: "Bottoms" },
+  { fi: "haalari(t)", en: "overalls / jumpsuit", cat: "Bottoms" },
+
+  // Accessories
+  { fi: "vyö", en: "belt", cat: "Accessories" },
+  { fi: "solmio / kravatti", en: "tie / necktie", sub_fi: "spoken: kraka", cat: "Accessories" },
+  { fi: "kaulahuivi / kaulaliina", en: "scarf", cat: "Accessories" },
+  { fi: "hattu", en: "hat", cat: "Accessories" },
+  { fi: "lippalakki", en: "cap / baseball cap", sub_fi: "spoken: lippis", cat: "Accessories" },
+  { fi: "pipo", en: "beanie / woolly hat", cat: "Accessories" },
+  { fi: "käsineet / sormikkaat", en: "gloves", cat: "Accessories" },
+  { fi: "lapaset", en: "mittens", cat: "Accessories" },
+
+  // Shoes & Socks
+  { fi: "sukat", en: "socks", cat: "Shoes" },
+  { fi: "kengät", en: "shoes", cat: "Shoes" },
+  { fi: "korkokengät", en: "high heels", cat: "Shoes" },
+  { fi: "saappaat", en: "boots (tall)", cat: "Shoes" },
+  { fi: "lenkkarit", en: "sneakers / trainers", sub_en: "colloquial", cat: "Shoes" },
+  { fi: "kumisaappaat", en: "rubber boots / wellies", sub_fi: "spoken: kumpparit", cat: "Shoes" },
+  { fi: "nilkkurit", en: "ankle boots", cat: "Shoes" },
+  { fi: "sandaalit", en: "sandals", cat: "Shoes" },
+  { fi: "(aamu)tossut", en: "slippers", cat: "Shoes" },
+];
+
+const CATEGORIES = ["All", ...new Set(ALL_CARDS.map(c => c.cat))];
+
+let deck = [...ALL_CARDS];
+let index = 0;
+let flipped = false;
+let shuffle = false;
+let direction = "fi-en"; // or "en-fi"
+let activeCategory = "All";
+let status = {}; // index in deck -> "known" | "again"
+
+function buildFilterBar() {
+  const bar = document.getElementById("filterBar");
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (cat === "All" ? " active" : "");
+    btn.textContent = cat;
+    btn.onclick = () => setCategory(cat);
+    btn.dataset.cat = cat;
+    bar.appendChild(btn);
+  });
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll(".filter-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.cat === cat);
+  });
+  buildDeck();
+}
+
+function buildDeck() {
+  deck = activeCategory === "All"
+    ? [...ALL_CARDS]
+    : ALL_CARDS.filter(c => c.cat === activeCategory);
+  if (shuffle) shuffleDeck();
+  status = {};
+  index = 0;
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+  document.getElementById("completion").classList.remove("show");
+  document.getElementById("mainContent").style.display = "flex";
+  updateCard();
+  updateStats();
+}
+
+function shuffleDeck() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+function toggleShuffle() {
+  shuffle = !shuffle;
+  const btn = document.getElementById("shuffleBtn");
+  btn.textContent = shuffle ? "🔀 Shuffle: ON" : "🔀 Shuffle: OFF";
+  btn.classList.toggle("on", shuffle);
+  buildDeck();
+}
+
+function toggleDirection() {
+  direction = direction === "fi-en" ? "en-fi" : "fi-en";
+  const btn = document.getElementById("dirBtn");
+  btn.innerHTML = direction === "fi-en" ? "&#x1F504; FI &rarr; EN" : "&#x1F504; EN &rarr; FI";
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+  updateCard();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById("card").classList.toggle("flipped", flipped);
+}
+
+function updateCard() {
+  if (deck.length === 0) return;
+  if (typeMode) { updateTypeCard(); return; }
+  const c = deck[index];
+
+  const isFI = direction === "fi-en";
+  const frontWord = isFI ? c.fi : c.en;
+  const backWord  = isFI ? c.en : c.fi;
+  const frontSub  = isFI ? (c.sub_fi || "") : (c.sub_en || "");
+  const backSub   = isFI ? (c.sub_en || "") : (c.sub_fi || "");
+
+  document.getElementById("frontLabel").textContent = isFI ? "Finnish" : "English";
+  document.getElementById("backLabel").textContent  = isFI ? "English" : "Finnish";
+  document.getElementById("frontWord").textContent  = frontWord;
+  document.getElementById("backWord").textContent   = backWord;
+  document.getElementById("frontSub").textContent   = frontSub;
+  document.getElementById("backSub").textContent    = backSub;
+  document.getElementById("cardCategory").textContent = c.cat;
+
+  const total = deck.length;
+  const pct = Math.round((index / total) * 100);
+  document.getElementById("progressText").textContent = `Card ${index + 1} of ${total}`;
+  document.getElementById("progressPct").textContent  = pct + "%";
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("navCount").textContent     = `${index + 1} / ${total}`;
+  document.getElementById("prevBtn").disabled = index === 0;
+  document.getElementById("nextBtn").disabled = index === deck.length - 1;
+}
+
+function nextCard() {
+  if (index < deck.length - 1) {
+    index++;
+    flipped = false;
+    document.getElementById("card").classList.remove("flipped");
+    updateCard();
+  } else {
+    showCompletion();
+  }
+}
+
+function prevCard() {
+  if (index > 0) {
+    index--;
+    flipped = false;
+    document.getElementById("card").classList.remove("flipped");
+    updateCard();
+  }
+}
+
+function markKnown() {
+  status[index] = "known";
+  updateStats();
+  nextCard();
+}
+
+function markAgain() {
+  status[index] = "again";
+  updateStats();
+  nextCard();
+}
+
+function updateStats() {
+  const known  = Object.values(status).filter(s => s === "known").length;
+  const again  = Object.values(status).filter(s => s === "again").length;
+  const unseen = deck.length - Object.keys(status).length;
+  document.getElementById("statKnown").textContent  = `Known: ${known}`;
+  document.getElementById("statAgain").textContent  = `Again: ${again}`;
+  document.getElementById("statUnseen").textContent = `Unseen: ${unseen}`;
+}
+
+function showCompletion() {
+  const known = Object.values(status).filter(s => s === "known").length;
+  const again = Object.values(status).filter(s => s === "again").length;
+  document.getElementById("completionText").textContent =
+    `You knew ${known} of ${deck.length} cards. ${again} marked for review.`;
+  document.getElementById("mainContent").style.display = "none";
+  document.getElementById("completion").classList.add("show");
+}
+
+function restartAll() {
+  buildDeck();
+}
+
+function restartAgain() {
+  const againIndices = Object.entries(status)
+    .filter(([, v]) => v === "again")
+    .map(([k]) => parseInt(k));
+  if (againIndices.length === 0) { restartAll(); return; }
+  deck = againIndices.map(i => deck[i]);
+  status = {};
+  index = 0;
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+  document.getElementById("completion").classList.remove("show");
+  document.getElementById("mainContent").style.display = "flex";
+  updateCard();
+  updateStats();
+}
+
+// Keyboard navigation
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "l") nextCard();
+  else if (e.key === "ArrowLeft" || e.key === "h") prevCard();
+  else if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (typeMode) { checkAnswer(); } else { flipCard(); } }
+  else if (e.key === "k") markKnown();
+  else if (e.key === "r") markAgain();
+});
+
+
+let typeMode = false;
+
+function toggleMode() {
+  typeMode = !typeMode;
+  const btn = document.getElementById('modeBtn');
+  btn.textContent = typeMode ? '✏️ Mode: Type' : '✏️ Mode: Flip';
+  btn.classList.toggle('on', typeMode);
+  document.getElementById('cardScene').classList.toggle('hidden', typeMode);
+  document.getElementById('typeArea').classList.toggle('active', typeMode);
+  // status buttons label swap
+  document.querySelector('.btn-known').innerHTML = typeMode ? '&#10003; Correct' : '&#10003; Know it';
+  document.querySelector('.btn-again').innerHTML = typeMode ? '&#x21BA; Wrong' : '&#x21BA; Study again';
+  resetTypeInput();
+  if (typeMode) updateTypeCard();
+}
+
+function resetTypeInput() {
+  const inp = document.getElementById('typeInput');
+  if (inp) { inp.value = ''; inp.className = 'type-input'; inp.disabled = false; }
+  const fb = document.getElementById('feedbackBox');
+  if (fb) { fb.className = 'feedback-box'; }
+  document.getElementById('submitBtn').textContent = 'Check';
+  document.getElementById('submitBtn').onclick = checkAnswer;
+}
+
+function updateTypeCard() {
+  if (deck.length === 0) return;
+  const c = deck[index];
+  const isFI = direction === 'fi-en';
+  document.getElementById('typeLabel').textContent = isFI ? 'Finnish' : 'English';
+  document.getElementById('typeWord').textContent  = isFI ? c.fi : c.en;
+  document.getElementById('typeSub').textContent   = isFI ? (c.sub_fi || '') : (c.sub_en || '');
+  document.getElementById('typeCategory').textContent = c.cat;
+  resetTypeInput();
+  setTimeout(() => { const inp = document.getElementById('typeInput'); if(inp) inp.focus(); }, 50);
+}
+
+function normalise(s) {
+  return s.trim().toLowerCase()
+    .replace(/[/\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/[()]/g, '')
+    .trim();
+}
+
+function checkAnswer() {
+  if (deck.length === 0) return;
+  const c = deck[index];
+  const isFI = direction === 'fi-en';
+  const correct = isFI ? c.en : c.fi;
+  const userRaw = document.getElementById('typeInput').value;
+  const user = normalise(userRaw);
+  if (!user) return;
+
+  // Accept if any slash-separated variant matches
+  const variants = correct.split(/[/,]/).map(v => normalise(v));
+  const isCorrect = variants.some(v => user === v || v.startsWith(user) && v.length - user.length <= 3 || user.startsWith(v) && user.length - v.length <= 3);
+
+  const inp = document.getElementById('typeInput');
+  const fb  = document.getElementById('feedbackBox');
+  inp.disabled = true;
+  inp.className = 'type-input ' + (isCorrect ? 'correct' : 'wrong');
+  fb.className  = 'feedback-box show ' + (isCorrect ? 'correct' : 'wrong');
+  document.getElementById('feedbackIcon').textContent = isCorrect ? '✓' : '✗';
+  document.getElementById('feedbackMsg').textContent  = isCorrect ? 'Correct!' : 'Not quite.';
+  document.getElementById('feedbackAnswer').textContent = isCorrect ? '' : 'Answer: ' + correct;
+
+  // Auto-mark status
+  status[index] = isCorrect ? 'known' : 'again';
+  updateStats();
+
+  // Change button to Next
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Next →';
+  btn.onclick = () => { isCorrect ? markKnown() : markAgain(); };
+}
+
+buildFilterBar();
+buildDeck();
+</script>
+</body>
+</html>
