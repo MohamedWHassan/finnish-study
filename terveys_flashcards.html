@@ -547,6 +547,34 @@ const ALL_CARDS = [
   { fi: "Pidä huolta itsestäsi!", en: "Take care of yourself!", cat: "Get Well" },
 ];
 
+  // Oireet — Symptom Expressions
+  { fi: "kutittaa", en: "to itch / feel itchy", cat: "Symptoms" },
+  { fi: "aivastuttaa", en: "to feel like sneezing", cat: "Symptoms" },
+  { fi: "oksettaa", en: "to feel nauseous", cat: "Symptoms" },
+  { fi: "Minulla koskee korviin.", en: "My ear hurts.", sub_fi: "koskee + allative", cat: "Symptoms" },
+  { fi: "Minulla koskee päähän.", en: "My head hurts.", sub_fi: "koskee + allative", cat: "Symptoms" },
+  { fi: "Minulla sattuu polveen.", en: "My knee hurts.", sub_fi: "sattuu + allative", cat: "Symptoms" },
+  { fi: "Minulla särkee rannetta.", en: "My wrist aches.", sub_fi: "särkee + partitive", cat: "Symptoms" },
+  { fi: "Minulla vuotaa nenä.", en: "I have a runny nose.", cat: "Symptoms" },
+  { fi: "Minulla on huono olo.", en: "I feel sick / I feel bad.", cat: "Symptoms" },
+  { fi: "Minulla on kuumetta.", en: "I have a fever.", sub_fi: "kuumetta = partitive of kuume", cat: "Symptoms" },
+  { fi: "otsa", en: "forehead", cat: "Symptoms" },
+  { fi: "angiina", en: "tonsillitis / throat infection", cat: "Symptoms" },
+
+  // Kiputiloja — Pain Conditions
+  { fi: "haava", en: "wound / cut", cat: "Pain" },
+  { fi: "nyrjähtänyt nilkka", en: "sprained ankle", cat: "Pain" },
+  { fi: "selkäkipu", en: "back pain", cat: "Pain" },
+  { fi: "polvikipu", en: "knee pain", cat: "Pain" },
+  { fi: "ranne", en: "wrist", cat: "Pain" },
+  { fi: "jännetuppitulehdus", en: "tenosynovitis / tendinitis", sub_en: "wrist/tendon inflammation", cat: "Pain" },
+  { fi: "hartiat jumissa", en: "stiff shoulders", sub_fi: "lit. shoulders stuck", cat: "Pain" },
+  { fi: "hermokipu", en: "nerve pain", cat: "Pain" },
+  { fi: "migreeni", en: "migraine", cat: "Pain" },
+  { fi: "toispuoleinen päänsärky", en: "one-sided headache", cat: "Pain" },
+  { fi: "kipu säteilee", en: "pain radiates", cat: "Pain" },
+
+
 const CATEGORIES = ["All", ...new Set(ALL_CARDS.map(c => c.cat))];
 
 let deck = [...ALL_CARDS];
